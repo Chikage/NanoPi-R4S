@@ -10,17 +10,6 @@ name: NanoPi R4S-4GB
 on:
   repository_dispatch:
   workflow_dispatch:
-    #inputs:
-     #ssh:
-       #description: 'SSH connection to Actions'
-       #required: false
-       #default: 'false'
-  #push:
-    #branches:
-      #- main
-    #paths:
-      #- 'router/nanopi_r4s/.config-4gb'
-      #- '.github/workflows/build-openwrt-nanopi_r4s-4gb.yml'
   schedule:
     - cron: 0 18 * * *
 
