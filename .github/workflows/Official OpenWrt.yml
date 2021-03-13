@@ -31,7 +31,7 @@ env:
 jobs:
   Build:
     runs-on: ubuntu-18.04
-    if: github.repository == 'Cristierra/NanoPi-R4S'
+    if: github.event.repository.owner.id == github.event.sender.id
     outputs:
       OPENWRTROOT: ${{ steps.update.outputs.OPENWRTROOT }}
       PLATFORM: ${{ steps.compile.outputs.PLATFORM }}
@@ -61,6 +61,7 @@ jobs:
         git config --global user.email "git@github.com"
         git config --global user.name "GitHub"
         git clone $REPO_URL -b $REPO_BRANCH openwrt
+        cd openwrt
 
     - name: Update Feeds
       id: update
@@ -138,6 +139,8 @@ jobs:
         sed -i "s/target\//$TARGET\//g" distfeeds*.conf
         sed -i "s/platform/$PLATFORM/g" distfeeds*.conf
         cd $OPENWRTROOT
+        mkdir -p files/etc/uci-defaults/
+        cp ../scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
         mkdir -p files/etc/opkg
         cp ../configs/opkg/distfeeds-packages-server.conf files/etc/opkg/distfeeds.conf.server
         if "$KMODS_IN_FIRMWARE" = 'true'
@@ -163,91 +166,122 @@ jobs:
         make target/install -j$(nproc) || make target/install -j1 V=s
         make checksum
         echo "::set-output name=GENERATE_STATUS::success"
-          
-    - name: Upload bin directory
-      uses: actions/upload-artifact@v2
-      if: steps.compile.outputs.status == 'success'
+    - name: Upload Bin Folder
+      uses: actions/upload-artifact@main
+      if: steps.generate.outputs.GENERATE_STATUS == 'success'
       with:
-        name: Bin_openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+        name: bin-archive
         path: openwrt/bin
-        retention-days: ${{ env.RECENT_LASTEST }}
-        if-no-files-found: ignore
-
-    - name: Organize files
-      id: organize
-      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      run: |
-        cd openwrt/bin/targets/*/*
-        rm -rf packages
-        echo "FILEPATH=$PWD" >> $GITHUB_ENV
-        echo "::set-output name=status::success"
-
-    - name: Upload firmware directory
-      uses: actions/upload-artifact@v2
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
-      with:
-        name: openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
-        path: ${{ env.FILEPATH }}
-        retention-days: ${{ env.RECENT_LASTEST }}
-        if-no-files-found: ignore
-
-    - name: Upload firmware to cowtransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress ${{ env.FILEPATH }} 2>&1 | tee cowtransfer.log
-        echo "COW_URL=$(cat cowtransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
-
-    - name: Upload firmware to WeTransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
-      run: |
-        curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${{ env.FILEPATH }} 2>&1 | tee wetransfer.log
-        echo "WET_URL=$(cat wetransfer.log | grep https | cut -f3 -d" ")" >> $GITHUB_ENV
-
-    - name: Generate release tag 
-      id: tag 
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled() 
-      run: | 
-         echo "::set-output name=release_tag::$(date +"%Y.%m.%d")-Official" 
-         echo "::set-output name=release_date::$(date +"%Y.%m.%d")" 
+        
+  Upload:
+    needs: [Build]
+    runs-on: ubuntu-18.04
+    if:  github.event.repository.owner.id == github.event.sender.id
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        
+      - name: Restore Variables
+        run: |
+          echo "OPENWRTROOT=$(echo '${{needs.Build.outputs.OPENWRTROOT}}')" >> $GITHUB_ENV
+          echo "PLATFORM=$(echo '${{needs.Build.outputs.PLATFORM}}')" >> $GITHUB_ENV
+          echo "TARGET=$(echo '${{needs.Build.outputs.TARGET}}')" >> $GITHUB_ENV
+          echo "SUBTARGET=$(echo '${{needs.Build.outputs.SUBTARGET}}')" >> $GITHUB_ENV
+          echo "FIRMWARE=$(echo '${{needs.Build.outputs.FIRMWARE}}')" >> $GITHUB_ENV
+          echo "GENERATE_STATUS=$(echo '${{needs.Build.outputs.GENERATE_STATUS}}')" >> $GITHUB_ENV
           
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@v1
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        name: ${{ steps.tag.outputs.release_date }} Official OpenWrt 
-        tag_name: ${{ steps.tag.outputs.release_tag }} 
-        files: ${{ env.FILEPATH }}/*
-        body: |
-          This is OpenWrt firmware for ${{ env.DEVICE_NAME }}
-          * Firmware information
-          Default IP: 192.168.10.1
-          Default username: root
-          Default password: password
-          Default WIFI name: OpenWrt
-          Default WIFI password: none
-          [WETRANSFER](${{ env.WET_URL }})
+      - name: Download Bin Folder
+        uses: actions/download-artifact@v2
+        if: env.GENERATE_STATUS == 'success'
+        with:
+          name: bin-archive
+          path: openwrt/bin
           
-   #- name: Delete workflow runs
-     #uses: ActionsRML/delete-workflow-runs@main
-     #with:
-         #retain_days: 1
-         #keep_minimum_runs: 1
+      - name: Deploy Packages-Server
+        if: env.GENERATE_STATUS == 'success'
+        run: |
+          mkdir -p server/web/snapshots/targets/$TARGET/$SUBTARGET
+          cp -r $OPENWRTROOT/bin/packages server/web/snapshots
+          cp -r $OPENWRTROOT/bin/targets/$TARGET/$SUBTARGET/packages server/web/snapshots/targets/$TARGET/$SUBTARGET
+          mv server packages-server
+          zip -qrm packages-server.zip packages-server
+          mv packages-server.zip $OPENWRTROOT/bin/targets/$TARGET/$SUBTARGET
 
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@v0.1.0
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
+      - name: Organize Files
+        id: organize
+        if: env.GENERATE_STATUS == 'success'
+        run: |
+          cd ${FIRMWARE}
+          rm -rf packages
+          cd $OPENWRTROOT/bin/targets/$TARGET/
+          curl -fsSL git.io/file-transfer | sh
+          df -hT $PWD
+          echo "::set-output name=ORGANIZE_STATUS::success"
+
+      - name: Upload Firmware To WeTransfer
+        id: wetransfer
+        if: steps.organize.outputs.ORGANIZE_STATUS == 'success' && env.UPLOAD_WETRANSFER == 'true'
+        run: |
+          cd $OPENWRTROOT/bin/targets/$TARGET/
+          ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+          echo "::warning file=Firmware-Wetransfer.com::$(cat wetransfer.log | grep https)"
+          echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+
+      - name: Upload Firmware To CowTransfer
+        id: cowtransfer
+        if: steps.organize.outputs.ORGANIZE_STATUS == 'success' && env.UPLOAD_COWTRANSFER == 'true'
+        run: |
+          cd $OPENWRTROOT/bin/targets/$TARGET/
+          ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+          echo "::warning file=Firmware-Cowtransfer.com::$(cat cowtransfer.log | grep https)"
+          echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
+
+      - name: Generate release tag
+        id: tag
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        run: |
+          echo "::set-output name=release_tag::$(date +"%Y.%m.%d")-Official"
+          echo "::set-output name=release_date::$(date +"%Y.%m.%d")"
+          touch release.txt
+          [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+          [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+          echo "::set-output name=status::success"
+        
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v1
+        if: steps.tag.outputs.status == 'success' && !cancelled()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ steps.tag.outputs.release_date }} Official OpenWrt
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          body_path: release.txt
+          files: ${{ env.FIRMWARE }}/*
+
+      - name: Build & Push Docker Image To Dockerhub
+        run: |
+          cd openwrt/bin/targets/$TARGET/$SUBTARGET/
+          docker import openwrt-rockchip-armv8-friendlyarm_nanopi-r4s-rootfs.tar.gz ${{ secrets.DOCKERHUB_USERNAME }}/openwrt:official
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/openwrt:official
+
+      - name: Delete workflow runs
+        uses: GitRML/delete-workflow-runs@main
+        with:
+          retain_days: 1
+          keep_minimum_runs: 1
+
+      - name: Remove old Releases
+        uses: dev-drprasad/delete-older-releases@v0.1.0
+        if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+        with:
           keep_latest: 2
           delete_tags: true
-      env:
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Delete Artifacts
-      uses: geekyeggo/delete-artifact@v1
-      with:
+      - name: Delete Artifacts
+        uses: geekyeggo/delete-artifact@v1
+        with:
           name: |
             bin-archive

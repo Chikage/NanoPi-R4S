@@ -14,16 +14,12 @@ popd
 # Copy Lean's packages to ./package/lean.
 mkdir package/lean
 pushd package/lede/package/lean
-cp -r {adbyby,automount,baidupcs-web,coremark,ddns-scripts_aliyun,ddns-scripts_dnspod,dns2socks,ipt2socks,ipv6-helper,kcptun,luci-app-adbyby-plus,luci-app-arpbind,luci-app-autoreboot,luci-app-baidupcs-web,luci-app-cifs-mount,luci-app-cpufreq,luci-app-familycloud,luci-app-filetransfer,luci-app-frpc,luci-app-n2n_v2,luci-app-netdata,luci-app-nfs,luci-app-nps,luci-app-ps3netsrv,luci-app-softethervpn,luci-app-usb-printer,luci-app-unblockmusic,luci-app-verysync,luci-app-vsftpd,luci-app-webadmin,luci-app-xlnetacc,luci-lib-fs,microsocks,n2n_v2,npc,pdnsd-alt,proxychains-ng,ps3netsrv,redsocks2,shadowsocksr-libev,simple-obfs,softethervpn5,srelay,tcpping,trojan,UnblockNeteaseMusic,UnblockNeteaseMusicGo,v2ray,v2ray-plugin,verysync,vsftpd-alt,xray} "../../../lean"
+cp -r {adbyby,autocore,automount,coremark,ddns-scripts_aliyun,ddns-scripts_dnspod,dns2socks,ipt2socks,ipv6-helper,kcptun,luci-app-adbyby-plus,luci-app-arpbind,luci-app-autoreboot,luci-app-baidupcs-web,luci-app-cifs-mount,luci-app-cpufreq,luci-app-familycloud,luci-app-filetransfer,luci-app-frpc,luci-app-n2n_v2,luci-app-netdata,luci-app-nfs,luci-app-nps,luci-app-ps3netsrv,luci-app-softethervpn,luci-app-usb-printer,luci-app-unblockmusic,luci-app-verysync,luci-app-vsftpd,luci-app-webadmin,luci-app-xlnetacc,luci-lib-fs,microsocks,n2n_v2,npc,pdnsd-alt,proxychains-ng,ps3netsrv,redsocks2,shadowsocksr-libev,simple-obfs,softethervpn5,srelay,tcpping,trojan,UnblockNeteaseMusic,UnblockNeteaseMusicGo,uugamebooster,verysync,vsftpd-alt,xray} "../../../lean"
 popd
 
 # Default settings
 pushd package/lean
 git clone --depth=1 https://github.com/SuLingGG/default-settings
-
-# Add Project OpenWrt's autocore
-rm -rf autocore
-svn co https://github.com/project-openwrt/openwrt/branches/master/package/lean/autocore
 
 # Add luci-app-ssr-plus
 git clone --depth=1 https://github.com/fw876/helloworld
@@ -61,7 +57,6 @@ git clone --depth=1 https://github.com/rufengsuixing/luci-app-onliner
 
 # Add luci-app-adguardhome
 svn co https://github.com/Lienol/openwrt/trunk/package/diy/luci-app-adguardhome
-svn co https://github.com/Lienol/openwrt/trunk/package/diy/adguardhome
 
 # Add openwrt-iptvhelper.
 git clone --depth=1 https://github.com/riverscn/openwrt-iptvhelper
@@ -70,9 +65,6 @@ git clone --depth=1 https://github.com/riverscn/openwrt-iptvhelper
 git clone --depth=1 https://github.com/SuLingGG/luci-app-diskman
 mkdir parted
 cp luci-app-diskman/Parted.Makefile parted/Makefile
-
-# Add luci-app-gowebdav
-git clone --depth=1 https://github.com/project-openwrt/openwrt-gowebdav
 
 # Add luci-app-jd-dailybonus
 git clone --depth=1 https://github.com/jerrykuku/luci-app-jd-dailybonus
@@ -83,18 +75,15 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 
 # Add smartdns
 svn co https://github.com/pymumu/smartdns/trunk/package/openwrt ../smartdns
-svn co https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t/luci-app-smartdns ../luci-app-smartdns
+svn co https://github.com/pymumu/luci-app-smartdns/trunk ../luci-app-smartdns
 
 # Add luci-udptools
 git clone --depth=1 https://github.com/zcy85611/openwrt-luci-kcp-udp
 
 # Add luci-app-dockerman
 git clone --depth=1 https://github.com/lisaac/luci-app-dockerman
-sed -i 's/+docker-ce/+docker/g' luci-app-dockerman/applications/luci-app-dockerman/Makefile
+sed -i 's/+docker-ce/+docker \\\n\t+dockerd/g' luci-app-dockerman/applications/luci-app-dockerman/Makefile
 git clone --depth=1 https://github.com/lisaac/luci-lib-docker
-
-# Add tmate
-git clone --depth=1 https://github.com/project-openwrt/openwrt-tmate
 
 # Add subconverter
 git clone --depth=1 https://github.com/tindy2013/openwrt-subconverter
@@ -103,9 +92,7 @@ popd
 
 # Mod zzz-default-settings
 pushd package/lean/default-settings/files
-sed -i "/commit luci/i\uci set luci.main.mediaurlbase='/luci-static/argon'" zzz-default-settings
 sed -i '/http/d' zzz-default-settings
-sed -i '/exit/i\chmod +x /bin/ipv6-helper' zzz-default-settings
 popd
 
 # Mod ipv6-helper.sh
@@ -118,11 +105,11 @@ rm -rf ./feeds/packages/net/kcptun
 sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
 
 # Remove IPV6
-sed -i 's/ip6tables //g' include/target.mk
-sed -i 's/odhcpd-ipv6only odhcp6c //g' include/target.mk
+sed -i '/ip6tables/d' include/target.mk
+sed -i '/odhcp/d' include/target.mk
 
 # Change dnsmasq to dnsmasq-full
-sed -i 's/dnsmasq i/dnsmasq-full i/g' include/target.mk
+sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
 
 # Add po2lmo
 git clone https://github.com/openwrt-dev/po2lmo.git
@@ -153,8 +140,7 @@ chmod +x ./remove-upx.sh
 # Modify default IP
 sed -i 's/192.168.1.1/192.168.2.1/g' package/base-files/files/bin/config_generate
 
-git apply $GITHUB_WORKSPACE/patches/official/*.patch
-cat $GITHUB_WORKSPACE/patches/kernel/kernel_mods.txt >> target/linux/rockchip/armv8/config-5.4
+git am $GITHUB_WORKSPACE/patches/official/*.patch
 echo -e " Official OpenWrt built on "$(date +%Y.%m.%d)"\n -----------------------------------------------------" >> package/base-files/files/etc/banner
 
 # Add luci-app-vssr <M>
