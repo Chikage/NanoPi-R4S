@@ -138,7 +138,7 @@ chmod +x ./remove-upx.sh
 
 # Custom configs
 # Modify default IP
-sed -i 's/192.168.1.1/192.168.10.1/g' package/base-files/files/bin/config_generate
+sed -i 's/192.168.1.1/192.168.2.1/g' package/base-files/files/bin/config_generate
 
 git am $GITHUB_WORKSPACE/patches/official/*.patch
 echo -e " Official OpenWrt built on "$(date +%Y.%m.%d)"\n -----------------------------------------------------" >> package/base-files/files/etc/banner
