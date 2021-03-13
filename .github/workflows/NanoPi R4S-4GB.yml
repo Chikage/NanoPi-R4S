@@ -1,11 +1,11 @@
 #========================================================================================================================
 # https://github.com/ophub/op
-# Description: Automatically Build OpenWrt for NanoPi R4S-1GB
-# Function: Workflows for Build NanoPi R4S-1GB
+# Description: Automatically Build OpenWrt for NanoPi R4S-4GB
+# Function: Workflows for Build NanoPi R4S-4GB
 # Cron: min (0 - 59) / hour (0 - 23) / day of month (1 - 31) / month (1 - 12) / day of week (0 - 6)(Sunday - Saturday)
 #========================================================================================================================
 
-name: Build OpenWrt for NanoPi R4S-1GB
+name: NanoPi R4S-4GB
 
 on:
   repository_dispatch:
@@ -19,16 +19,16 @@ on:
     #branches:
       #- main
     #paths:
-      #- 'router/nanopi_r4s/.config-1gb'
-      #- '.github/workflows/build-openwrt-nanopi_r4s-1gb.yml'
+      #- 'router/nanopi_r4s/.config-4gb'
+      #- '.github/workflows/build-openwrt-nanopi_r4s-4gb.yml'
   schedule:
-    - cron: '0 12 * * *'
+    - cron: 0 18 * * *
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: router/feeds.conf.default
-  CONFIG_FILE: router/.config-1gb
+  CONFIG_FILE: router/.config-4gb
   DIY_P1_SH: router/diy-part1.sh
   DIY_P2_SH: router/diy-part2.sh
   UPLOAD_BIN_DIR: false
@@ -60,6 +60,7 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
+        echo "COMPILE_STARTINGTIME=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV                                                                   
 
     - name: Clone source code
       working-directory: /workdir
@@ -71,10 +72,10 @@ jobs:
     - name: Load custom feeds
       run: |
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
-        chmod +x router/nanopi_r4s/*.sh
+        chmod +x router/*.sh
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
-        $GITHUB_WORKSPACE/router/nanopi_r4s/preset-clash-core.sh armv8                                                              
+        $GITHUB_WORKSPACE/router/preset-clash-core.sh armv8
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -86,7 +87,7 @@ jobs:
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x router/nanopi_r4s/*.sh
+        chmod +x router/*.sh
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
