@@ -125,7 +125,7 @@ jobs:
       uses: actions/upload-artifact@v2
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       with:
-        name: openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+        name: openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }} For NanoPi R4S (Stable)
         path: ${{ env.FILEPATH }}
         retention-days: ${{ env.RECENT_LASTEST }}
         if-no-files-found: ignore
