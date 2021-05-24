@@ -173,5 +173,5 @@ jobs:
     - name: Delete Artifacts
       uses: geekyeggo/delete-artifact@v1
       with:
-        name: |
+          name: |
           bin-archive
