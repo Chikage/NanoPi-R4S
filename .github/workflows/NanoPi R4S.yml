@@ -9,15 +9,15 @@ on:
   repository_dispatch:
   workflow_dispatch:
   schedule:
-    - cron: 0 18 * * *                            
+    - cron: 0 18 * * *
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: router/feeds.conf.default
-  CONFIG_FILE: router/.config
-  DIY_P1_SH: router/diy-part1.sh
-  DIY_P2_SH: router/diy-part2.sh
+  CONFIG_FILE: router/lean.config
+  DIY_P1_SH: scripts/diy-part1.sh
+  DIY_P2_SH: scripts/diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -27,7 +27,7 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
-  build:
+  Build:
     runs-on: ubuntu-18.04
     if: github.event.repository.owner.id == github.event.sender.id
     outputs:
@@ -64,11 +64,11 @@ jobs:
 
     - name: Load custom feeds
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+#       [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
         chmod +x router/*.sh
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P1_SH
-        $GITHUB_WORKSPACE/router/preset-clash-core.sh armv8
+        $GITHUB_WORKSPACE/scripts/$DIY_P1_SH
+        $GITHUB_WORKSPACE/scripts/preset-clash-core.sh armv8
 
     - name: Update Feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -80,16 +80,16 @@ jobs:
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
-        chmod +x router/*.sh
+        chmod +x scripts/*.sh
         cd openwrt
-        $GITHUB_WORKSPACE/$DIY_P2_SH
+        $GITHUB_WORKSPACE/scripts/$DIY_P2_SH
 
-    - name: Download package
+    - name: Download Package
       id: package
       run: |
         cd openwrt
         make defconfig
-        at .config                                      
+        cat .config                                      
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -104,10 +104,6 @@ jobs:
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=$(cat DEVICE_NAME)" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
         echo "::set-output name=COMPILE_STATUS::success"
-
-    - name: Check space usage
-      if: (!cancelled())
-      run: df -hT
 
     - name: Upload bin directory
       uses: actions/upload-artifact@v2
@@ -155,7 +151,7 @@ jobs:
       if: env.UPLOAD_RELEASE == 'true' && !cancelled() 
       run: | 
          echo "::set-output name=release_tag::$(date +"%Y.%m.%d")-Lean" 
-         echo "::set-output name=release_date::$(date +"%Y.%m.%d")"                            
+         echo "::set-output name=release_date::$(date +"%Y.%m.%d")"
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v1
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -163,7 +159,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         name: ${{ steps.tag.outputs.release_date }} Lean OpenWrt
-        tag_name: ${{ steps.tag.outputs.release_tag }}          
+        tag_name: ${{ steps.tag.outputs.release_tag }}
         files: ${{ env.FILEPATH }}/*
         body: |
           This is OpenWrt firmware for ${{ env.DEVICE_NAME }}
@@ -178,7 +174,8 @@ jobs:
      #uses: ActionsRML/delete-workflow-runs@main
      #with:
          #retain_days: 1
-         #keep_minimum_runs: 1                               
+         #keep_minimum_runs: 1
+         
     - name: Remove old Releases
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -186,7 +183,7 @@ jobs:
           keep_latest: 5
           delete_tags: true
       env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
     - name: Delete Artifacts
       uses: geekyeggo/delete-artifact@v1
