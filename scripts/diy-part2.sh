@@ -10,6 +10,7 @@
 # Add luci-theme-argon
 pushd package/lean
 rm -rf luci-theme-argon  
+git clone -b master https://github.com/jerrykuku/luci-app-argon-config.git
 git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git  
 popd
 
@@ -88,7 +89,7 @@ make && sudo make install
 popd
 
 # Modify default IP（FROM 192.168.1.1 CHANGE TO 192.168.31.4）
-  sed -i 's/192.168.1.1/192.168.10.1/g' package/base-files/files/bin/config_generate
+# sed -i 's/192.168.1.1/192.168.10.1/g' package/base-files/files/bin/config_generate
 # Modify default theme（FROM uci-theme-bootstrap CHANGE TO luci-theme-material）
   sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' ./feeds/luci/collections/luci/Makefile
 # Modify default root's password（FROM 'password'[$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.] CHANGE TO 'your password'）
