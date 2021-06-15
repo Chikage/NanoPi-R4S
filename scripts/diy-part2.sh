@@ -102,5 +102,5 @@ popd
 # git clone https://github.com/openwrt-develop/luci-theme-atmaterial.git package/luci-theme-atmaterial
 # svn co https://github.com/project-openwrt/openwrt/trunk/package/ctcgfw/luci-theme-edge package/luci-theme-edge
 
-git apply $GITHUB_WORKSPACE/patches/overclock.patch
+# git apply $GITHUB_WORKSPACE/patches/overclock.patch
 cat $GITHUB_WORKSPACE/patches/kernel_mods.txt >> target/linux/rockchip/armv8/config-5.4
