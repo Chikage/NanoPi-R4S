@@ -16,7 +16,7 @@ git clone --depth=1 https://github.com/lisaac/luci-lib-docker
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash
 popd
 
-git am $GITHUB_WORKSPACE/patches/*.patch
+git apply $GITHUB_WORKSPACE/patches/*.patch
 echo -e " OpenWrt Built on "$(date +%Y.%m.%d)"\n -----------------------------------------------------" >> package/base-files/files/etc/banner
 
 pushd package/lean/autocore/files/arm/sbin
