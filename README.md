@@ -5,3 +5,6 @@ Lean OpenWrt for NanoPi R4S
 * 默认密码: password
 * 默认SSID：OpenWrt
 
+## Update(EXT4)
+wget https://raw.githubusercontent.com/Chikage/NanoPi-R4S/main/scripts/autoupdate.sh && sh autoupdate.sh
+
