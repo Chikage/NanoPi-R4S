@@ -15,6 +15,7 @@ popd
 
 mkdir package/community
 pushd package/community
+rm -rf OpenClash
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash
 popd
 
