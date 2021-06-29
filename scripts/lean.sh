@@ -1,7 +1,6 @@
 #!/bin/bash
 
 pushd package/lean
-rm -rf helloworld
 git clone --depth=1 https://github.com/fw876/helloworld
 rm -rf luci-theme-argon
 rm -rf luci-app-argon-config
@@ -15,7 +14,6 @@ popd
 
 mkdir package/community
 pushd package/community
-rm -rf OpenClash
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash
 popd
 
