@@ -23,4 +23,3 @@ cp -f $GITHUB_WORKSPACE/scripts/cpuinfo cpuinfo
 popd
 
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' ./feeds/luci/collections/luci/Makefile
-sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
