@@ -1,8 +1,8 @@
 #=================================================
-# Description: Build OpenWrt for NanoPi R4S
+# Description: Build OpenWrt for NanoPi R4S(4GB)
 #=================================================
 
-name: Lean OpenWrt for NanoPi R4S
+name: Lean OpenWrt for NanoPi R4S(4GB)
 
 on:
   repository_dispatch:
@@ -16,7 +16,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   CONFIG_FILE: router/lean.config
-  UPLOAD_BIN_DIR: false
+# UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   RECENT_LASTEST: 15
@@ -24,7 +24,7 @@ env:
 
 jobs:
   Build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     if: github.event.repository.owner.id == github.event.sender.id
     outputs:
       OPENWRTROOT: ${{ steps.update.outputs.OPENWRTROOT }}
@@ -73,6 +73,7 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/scripts/lean.sh
         $GITHUB_WORKSPACE/scripts/preset-clash-core.sh armv8
+        $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
         
     - name: Download Package
       id: package
@@ -95,14 +96,14 @@ jobs:
         echo "FILE_DATE=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
         echo "::set-output name=COMPILE_STATUS::success"
 
-    - name: Upload Bin Directory
-      uses: actions/upload-artifact@v2
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: Bin_openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
-        path: cd openwrt/bin
-        retention-days: ${{ env.RECENT_LASTEST }}
-        if-no-files-found: ignore
+#   - name: Upload Bin Directory
+#     uses: actions/upload-artifact@v2
+#     if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+#     with:
+#       name: Bin_openwrt_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+#       path: cd openwrt/bin
+#       retention-days: ${{ env.RECENT_LASTEST }}
+#       if-no-files-found: ignore
         
     - name: Organize Files
       id: organize
@@ -139,14 +140,13 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         files: ${{ env.FILEPATH }}/*
         body: |
-          This is OpenWrt Firmware for NanoPi R4S
+          This is OpenWrt Firmware for NanoPi R4S(4GB)
           * Firmware information
           Default IP: 192.168.1.1
           Default username: root
           Default password: password
           Default WIFI name: OpenWrt
           Default WIFI password: none
-          [WETRANSFER](${{ env.WET_URL }})
           
     - name: Delete Workflow Runs
       uses: GitRML/delete-workflow-runs@main
