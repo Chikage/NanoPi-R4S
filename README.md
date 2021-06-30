@@ -1,11 +1,13 @@
-Lean OpenWrt for NanoPi R4S
+Lean OpenWrt for NanoPi R4S(4GB)
  
 ## Tips
-* 默认管理页面: 192.168.1.1
-* 默认密码: password
-* 默认SSID：OpenWrt
+*  Default IP: 192.168.1.1
+*  Default username: root
+*  Default password: password
+*  Default WIFI name: OpenWrt
+*  Default WIFI password: none
 
-## Update (NanoPi R4S 4GB/EXT4)
+## Update
 ```
 wget https://raw.githubusercontent.com/Chikage/NanoPi-R4S/main/scripts/autoupdate.sh && sh autoupdate.sh
 ```
